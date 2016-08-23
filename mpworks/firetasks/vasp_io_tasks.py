@@ -174,34 +174,16 @@ class VaspToDBTask(FireTaskBase, FWSerializable):
         update_spec.update({'mpsnl': mpsnl, 'snlgroup_id': snlgroup_id})
 
         print 'ENTERED task id:', t_id
-#        print('d[state] = ', d['state'])
-#        print('d = ', d)
+        print('d[state] = ', d['state'])
+        print('d = ', d)
         stored_data = {'task_id': t_id}
         if d['state'] == 'successful':
-            if 'strainfactor' in fw_spec['task_type']:
-                pass
-            else:
-                update_spec['analysis'] = d['analysis']
-                update_spec['output'] = d['output']
-                update_spec['vasp']={'incar':d['calculations'][-1]['input']['incar'],
+            update_spec['analysis'] = d['analysis']
+            update_spec['output'] = d['output']
+            update_spec['vasp']={'incar':d['calculations'][-1]['input']['incar'],
                                  'kpoints':d['calculations'][-1]['input']['kpoints']}
-                update_spec["task_id"]=t_id
-#                print('Update successful')
-#                print('update_spec[task_id] = ', update_spec['task_id'])
-                return FWAction(stored_data=stored_data, update_spec=update_spec)
-#            update_spec['analysis'] = d['analysis']
-#            update_spec['output'] = d['output']
-#            update_spec['vasp']={'incar':d['calculations'][-1]['input']['incar'],
-#                                 'kpoints':d['calculations'][-1]['input']['kpoints']}
-#            update_spec["task_id"]=t_id
-#            print('Update successful')
-#            print('update_spec[task_id] = ', update_spec['task_id'])
-#            if 'strainfactor' in fw_spec.keys():
-#                print("Updating strainfactor")
-#                update_spec['strainfactor'] = fw_spec['strainfactor']
-#                update_spec['original_task_id'] = fw_spec['original_task_id']
-#                print("update_spec[original_task_id] = ", update_spec['original_task_id'])
-#	    return FWAction(stored_data=stored_data, update_spec=update_spec)
+            update_spec["task_id"]=t_id
+            return FWAction(stored_data=stored_data, update_spec=update_spec)
 
         # not successful - first test to see if UnconvergedHandler is needed
         if not fizzled_parent:
@@ -227,11 +209,9 @@ class VaspToDBTask(FireTaskBase, FWSerializable):
                 if 'deformation_matrix' in fw_spec.keys():
                     spec['deformation_matrix'] = fw_spec['deformation_matrix']
                     spec['original_task_id'] = fw_spec['original_task_id']
-                if 'strainfactor' in fw_spec['task_type']:
-#                    print("Updating strainfactor")
+                if 'strainfactor' in fw_spec.keys():
                     spec['strainfactor'] = fw_spec['strainfactor']
                     spec['original_task_id'] = fw_spec['original_task_id']
-#                    print("spec[original_task_id] = ", spec['original_task_id'])
                 snl = StructureNL.from_dict(spec['mpsnl'])
                 spec['run_tags'].append(unconverged_tag)
                 spec['_queueadapter'] = QA_VASP
@@ -255,10 +235,8 @@ class VaspToDBTask(FireTaskBase, FWSerializable):
                     spec['deformation_matrix'] = fw_spec['deformation_matrix']
                     spec['original_task_id'] = fw_spec['original_task_id']
                 if 'strainfactor' in fw_spec.keys():
-#                    print("Updating strainfactor")
                     spec['strainfactor'] = fw_spec['strainfactor']
                     spec['original_task_id'] = fw_spec['original_task_id']
-#                    print("spec[original_task_id] = ", spec['original_task_id'])
                 spec['run_tags'].append(unconverged_tag)
                 fws.append(
                     Firework([VaspToDBTask()], spec, name=get_slug(f + '--' + spec['task_type']),

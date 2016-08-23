@@ -98,7 +98,7 @@ class SetupModifiedVolumeStructTask(FireTaskBase, FWSerializable):
             spec['_priority'] = fw_spec['_priority']*2
             #Turn off dupefinder for modified structure
             del spec['_dupefinder']
-            spec['task_type'] = "Calculate static modified structure"
+            spec['task_type'] = "Calculate static modified volume structure"
             fws.append(Firework([VaspWriterTask(), SetupEoSThermalTask(), get_custodian_task(spec)],
                                 spec, name=get_slug(f + '--' + fw_spec['task_type']), fw_id=-999+i*10))
 
