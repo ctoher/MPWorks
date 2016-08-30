@@ -147,7 +147,7 @@ class AddEoSThermalDataToDBTask(FireTaskBase, FWSerializable):
         tdb = connection[db_creds['database']]
         tdb.authenticate(db_creds['admin_user'], db_creds['admin_password'])
         tasks = tdb[db_creds['collection']]
-        print("tasks = ", tasks)
+#        print("tasks = ", tasks)
 #        print("tasks size = ", len(tasks))
 #        print("tasks keys = ", tasks.keys)
         eos_thermal = tdb['eos_thermal']
@@ -200,7 +200,7 @@ class AddEoSThermalDataToDBTask(FireTaskBase, FWSerializable):
         for k in tasks.find({"original_task_id": i}, {"strainfactor":1, "calculations.output":1, "state":1, "task_id":1}):
 #            defo = k['strainfactor']
 #            	print("In loop over k")
-            print("k = ", k)
+#            print("k = ", k)
 #            	print("k.keys = ", k.keys)            
             kenerg_atom = k['calculations'][0]['output']['final_energy_per_atom']
             print("Energy per atom = ", kenerg_atom)
@@ -270,7 +270,10 @@ class AddEoSThermalDataToDBTask(FireTaskBase, FWSerializable):
             eos_thermal_dict = {}
             # Perform thermal equation of state fitting and analysis
 #            eos_thermal_dict = eos_thermal_properties.eos_thermal_run(calc_struct, volume_values, energy_values, ieos=2)
-            eos_thermal_dict = eos_thermal_properties.eos_thermal_run(calc_struct, volume_values, energy_values, ieos=2, idebye=0, poissonratio=poisson_val)
+#            eos_thermal_dict = eos_thermal_properties.eos_thermal_run(calc_struct, volume_values, energy_values, ieos=2, idebye=0, poissonratio=poisson_val)
+            eos_thermal_properties_inst = eos_thermal_properties()
+#            eos_thermal_dict = eos_thermal_properties_inst.eos_thermal_run(calc_struct, volume_values, energy_values, ieos=0, idebye=0, poissonratio=poisson_val)
+            eos_thermal_dict = eos_thermal_properties_inst.eos_thermal_run(calc_struct, volume_values, energy_values, poissonratio=poisson_val)
             
 	    # Test to check if results have been calculated
 	    print("Thermal conductivity = ", eos_thermal_dict["thermal_conductivity"])
