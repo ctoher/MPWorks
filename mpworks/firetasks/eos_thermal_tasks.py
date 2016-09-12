@@ -10,7 +10,7 @@ __author__ = 'Cormac Toher'
 
 from fireworks.utilities.fw_serializers import FWSerializable
 from fireworks.core.firework import FireTaskBase, FWAction
-from pymatgen.io.vasp.inputs import Incar, Poscar
+from pymatgen.io.vasp.inputs import Incar, Poscar, Kpoints
 from pymatgen.analysis.eqn_of_state_thermal.eos_vasp_setup import ModifiedVolumeStructureSet
 from pymatgen.analysis.eqn_of_state_thermal.eos_wf_run import eos_thermal_properties
 from fireworks.core.firework import Firework, Workflow
@@ -24,8 +24,6 @@ from mpworks.firetasks.snl_tasks import AddSNLTask
 from mpworks.snl_utils.mpsnl import get_meta_from_structure, MPStructureNL
 from pymatgen.core.structure import Structure
 from mpworks.workflows.wf_settings import QA_VASP, QA_DB, QA_VASP_SMALL
-from pymatgen.io.vasp.inputs import Poscar, Kpoints
-from pymatgen import MPRester
 
 def update_spec_force_convergence(spec, user_vasp_settings=None):
     fw_spec = spec
@@ -96,14 +94,13 @@ class SetupModifiedVolumeStructTask(FireTaskBase, FWSerializable):
             spec['strainfactor'] = modified_struct_set.strainfactors[i]
             spec['original_task_id']=fw_spec["task_id"]
             spec['_priority'] = fw_spec['_priority']*2
-            #Turn off dupefinder for modified structure
+            # Turn off dupefinder for modified structure
             del spec['_dupefinder']
             spec['task_type'] = "Calculate static modified volume structure"
             fws.append(Firework([VaspWriterTask(), SetupEoSThermalTask(), get_custodian_task(spec)],
                                 spec, name=get_slug(f + '--' + fw_spec['task_type']), fw_id=-999+i*10))
 
             priority = fw_spec['_priority']*3
-#            task_id_list.append(fw_spec["task_id"])
             spec = {'task_type': 'VASP db insertion', '_priority': priority,
                     '_allow_fizzled_parents': True, '_queueadapter': QA_DB, 'poisson_ratio': poisson_val,
                     'eqn_of_state_thermal':"modified_structure", 'clean_task_doc':True,
@@ -111,15 +108,6 @@ class SetupModifiedVolumeStructTask(FireTaskBase, FWSerializable):
             fws.append(Firework([VaspToDBTask(), AddEoSThermalDataToDBTask()], spec, name=get_slug(f + '--' + spec['task_type']), fw_id=-998+i*10))
             connections[-999+i*10] = [-998+i*10]
             wf.append(Workflow(fws, connections))
-#        fws=[]
-#        connections={}
-#        spec = {'task_type': 'Add EoS Thermal Data to DB Task', '_priority': priority,
-#         '_queueadapter': QA_DB, 'poisson_ratio': poisson_val}
-#        print("Calling firetask")
-#        fws.append(Firework([AddEoSThermalDataToDBTask()], spec,
-#                        name=get_slug(f + '--' + spec['task_type']),fw_id=-997+i*10))
-#        connections[-998+i*10] = [-997+i*10]
-#        wf.append(Workflow(fws, connections))
         return FWAction(additions=wf)        
 
 
@@ -127,19 +115,13 @@ class AddEoSThermalDataToDBTask(FireTaskBase, FWSerializable):
     _fw_name = "Add EoS Thermal Data to DB Task"
 
     def run_task(self, fw_spec):
-	print("Running EoS Thermal Data")
         db_dir = os.environ['DB_LOC']
         db_path = os.path.join(db_dir, 'tasks_db.json')
-        print("fw_spec keys = ", fw_spec.keys())        
 	poisson_val = fw_spec['poisson_ratio']
-        print("Poisson ratio = ", poisson_val)
 	strainfactor_val = fw_spec['strainfactor']
-        print("Strain factor = ", strainfactor_val)
         task_id_list = fw_spec['original_task_id_list']
         i = fw_spec['original_task_id']
-	print("original_task_id = ", i)
         j = fw_spec['task_id']
-	print("task_id = ", j)
 
         with open(db_path) as f:
             db_creds = json.load(f)
@@ -147,31 +129,16 @@ class AddEoSThermalDataToDBTask(FireTaskBase, FWSerializable):
         tdb = connection[db_creds['database']]
         tdb.authenticate(db_creds['admin_user'], db_creds['admin_password'])
         tasks = tdb[db_creds['collection']]
-#        print("tasks = ", tasks)
-#        print("tasks size = ", len(tasks))
-#        print("tasks keys = ", tasks.keys)
         eos_thermal = tdb['eos_thermal']
-#        i = 'mp-1265'
         ndocs = tasks.find({"original_task_id": i, 
                             "state":"successful"}).count()
-#        ndocs = tasks.find({"task_id": i, 
-#                            "state":"successful"}).count()
-        print("ndocs = ", ndocs)
-#        print("tasks keys = ", tasks.keys)
-#        print("tasks size = ", len(tasks))
-#        ndocs = tasks.find({"task_id": i, 
-#                            "state":"successful"}).count()
         existing_doc = eos_thermal.find_one({"relaxation_task_id" : i})
-#        existing_doc = eos_thermal.find_one({"task_id" : i})
-#        print("existing_doc = ", existing_doc)
         if existing_doc:
             print "Updating: " + i
         else:
             print "New material: " + i
         d = {"analysis": {}, "error": [], "warning": []}
         d["ndocs"] = ndocs
-#        o_size = tasks.find_one({"task_id" : i}, {"pretty_formula" : 1, "spacegroup" : 1, "snl" : 1, "snl_final" : 1, "run_tags" : 1}).count()
-#	print("o_size = ", o_size)
 	o = tasks.find_one({"task_id" : i},
                            {"pretty_formula" : 1, "spacegroup" : 1,
                             "snl" : 1, "snl_final" : 1, "run_tags" : 1})
@@ -179,59 +146,17 @@ class AddEoSThermalDataToDBTask(FireTaskBase, FWSerializable):
             raise ValueError("Cannot find original task id")
 	if o: 
 	    print("o exists")
-#            o_size_two = o.count()
-#	    print("o_size_two = ", o_size_two)
-#	    print("o value = ", o)
-#        testok = tasks.find_one({"task_id" : i})
-#        print("testok = ", testok)
-        # Get energy vs. volume from strained structures
         d["strain_tasks"] = {}
-        #ss_dict = {}
-#	print("o = ", o)
         volume_values = []
         energy_values = []
-        #m = MPRester("o95HBW1KgfiSA0tN")	
-        #elasticity_data = m.query(criteria={"task_id": "mp-1265"}, properties=["elasticity"])
-        #poisson_val = elasticity_data[0]["elasticity"]["poisson_ratio"]
-#        for k in tasks.find({"original_task_id": i}, 
-#        print("Starting loop over k")
-#        for ij in task_id_list:
-#            print("ij = ", ij)
-        for k in tasks.find({"original_task_id": i}, {"strainfactor":1, "calculations.output":1, "state":1, "task_id":1}):
-#            defo = k['strainfactor']
-#            	print("In loop over k")
-#            print("k = ", k)
-#            	print("k.keys = ", k.keys)            
+        for k in tasks.find({"original_task_id": i}, {"strainfactor":1, "calculations.output":1, "state":1, "task_id":1}):     
             kenerg_atom = k['calculations'][0]['output']['final_energy_per_atom']
-            print("Energy per atom = ", kenerg_atom)
             kvol = k['calculations'][0]['output']['crystal']['lattice']['volume']
-            print("Volume = ", kvol)
             ksites = k['calculations'][0]['output']['crystal']['sites']
             knatoms = len(ksites)
             kenerg = kenerg_atom * knatoms
             energy_values.append(kenerg)
             volume_values.append(kvol)
-#	    	energy_values.append(k['output.final_energy'])
-#            volume_values.append(k['output.crystal.lattice.volume'])
-            # d_ind = np.nonzero(defo - np.eye(3))
-            # delta = Decimal((defo - np.eye(3))[d_ind][0])
-            # Normal deformation
-            # if d_ind[0] == d_ind[1]:
-            #    dtype = "_".join(["d", str(d_ind[0][0]), 
-            #                      "{:.0e}".format(delta)])
-            # Shear deformation
-            # else:
-            #    dtype = "_".join(["s", str(d_ind[0] + d_ind[1]),
-            #                      "{:.0e}".format(delta)])
-            #sm = IndependentStrain(defo)
-            #d["strain_tasks"][dtype] = {"state" : k["state"],
-            #                                 "strainfactor" : defo,
-            #                                 "strain" : sm.tolist(),
-            #                                 "task_id": k["task_id"]}
-            #if k["state"] == "successful":
-            #    st = Stress(k["calculations"][-1]["output"] \
-            #                ["ionic_steps"][-1]["stress"])
-            #    ss_dict[sm] = st
         d["snl"] = o["snl"]
         if "run_tags" in o.keys():
             d["run_tags"] = o["run_tags"]
@@ -254,29 +179,15 @@ class AddEoSThermalDataToDBTask(FireTaskBase, FWSerializable):
         d["relaxation_task_id"] = i
 
         calc_struct = Structure.from_dict(o["snl_final"])
-        # TODO:
-        # JHM: This test is unnecessary at the moment, but should be redone
-        """
-        conventional = is_conventional(calc_struct)
-        if conventional:
-            d["analysis"]["is_conventional"] = True
-        else:
-            d["analysis"]["is_conventional"] = False
-        """
         d["spacegroup"]=o.get("spacegroup", "Unknown")
 
         
         if ndocs >= 21:
             eos_thermal_dict = {}
             # Perform thermal equation of state fitting and analysis
-#            eos_thermal_dict = eos_thermal_properties.eos_thermal_run(calc_struct, volume_values, energy_values, ieos=2)
-#            eos_thermal_dict = eos_thermal_properties.eos_thermal_run(calc_struct, volume_values, energy_values, ieos=2, idebye=0, poissonratio=poisson_val)
             eos_thermal_properties_inst = eos_thermal_properties()
-#            eos_thermal_dict = eos_thermal_properties_inst.eos_thermal_run(calc_struct, volume_values, energy_values, ieos=0, idebye=0, poissonratio=poisson_val)
             eos_thermal_dict = eos_thermal_properties_inst.eos_thermal_run(calc_struct, volume_values, energy_values, poissonratio=poisson_val)
             
-	    # Test to check if results have been calculated
-	    print("Thermal conductivity = ", eos_thermal_dict["thermal_conductivity"])
             # Add equation of state results to dict
             d["temperature"] = eos_thermal_dict["temperature"]
             d["pressure"] = eos_thermal_dict["pressure"]

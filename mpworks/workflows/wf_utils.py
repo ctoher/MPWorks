@@ -1,10 +1,16 @@
 import glob
+import logging
 import os
+import shlex
 import shutil
 import time
 import traceback
+
+import subprocess
+
+import re
 from monty.os.path import zpath
-from mpworks.workflows.wf_settings import RUN_LOCS
+from mpworks.workflows.wf_settings import RUN_LOCS, GARDEN
 
 
 __author__ = 'Anubhav Jain'
@@ -74,10 +80,7 @@ def get_loc(m_dir):
 
 def move_to_garden(m_dir, prod=False):
     block_part = get_block_part(m_dir)
-    if prod:
-        garden_part = '/project/projectdirs/matgen/garden/'
-    else:
-        garden_part = '/project/projectdirs/matgen/garden/dev'
+    garden_part = GARDEN if prod else GARDEN+'/dev'
     f_dir = os.path.join(garden_part, block_part)
     if os.path.exists(m_dir) and not os.path.exists(f_dir) and m_dir != f_dir:
         try:
@@ -93,3 +96,36 @@ def move_to_garden(m_dir, prod=False):
 
 
     return f_dir
+
+class ScancelJobStepTerminator:
+    """
+    A tool to cancel a job step in a SLURM srun job using scancel command.
+    """
+
+    def __init__(self, stderr_filename):
+        """
+
+        Args:
+            stderr_filename: The file name of the stderr for srun job step.
+        """
+        self.stderr_filename = stderr_filename
+
+    def cancel_job_step(self):
+        step_id = self.parse_srun_step_number()
+        scancel_cmd = shlex.split("scancel --signal=KILL {}".format(step_id))
+        logging.info("Terminate the job step using {}".format(' '.join(scancel_cmd)))
+        subprocess.Popen(scancel_cmd)
+
+    def parse_srun_step_number(self):
+        step_pat_text = r"srun: launching (?P<step_id>\d+[.]\d+) on host \w+, \d+ tasks:"
+        step_pat = re.compile(step_pat_text)
+        step_id = None
+        with open(self.stderr_filename) as f:
+            err_text = f.readlines()
+        for line in err_text:
+            m = step_pat.search(line)
+            if m is not None:
+                step_id = m.group("step_id")
+        if step_id is None:
+            raise ValueError("Can't find SRUN job step number in STDERR file")
+        return step_id

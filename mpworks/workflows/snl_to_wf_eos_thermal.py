@@ -1,4 +1,4 @@
-from pymatgen.io.vaspio import Poscar
+#from pymatgen.io.vaspio import Poscar
 
 __author__ = 'Cormac Toher'
 
@@ -70,16 +70,6 @@ def snl_to_wf_eos_thermal(snl, parameters=None):
                         name=get_slug(f + '--' + spec['task_type']),fw_id=3))
     connections[2] = [3]
 
-#    print("Calling EoS results to DB task")
-#    print("Setting up spec")
- 
-#    spec = {'task_type': 'Add EoS Thermal Data to DB Task', '_priority': priority,
-#                '_queueadapter': QA_CONTROL, 'poisson_ratio': poisson_val}
-#    print("Calling firetask")
-#    fws.append(Firework([AddEoSThermalDataToDBTask()], spec, 
-#                        name=get_slug(f + '--' + spec['task_type']),fw_id=99))
-#    connections[3] = [99]
-
     wf_meta = get_meta_from_structure(snl.structure)
     wf_meta['run_version'] = 'May 2013 (1)'
 
@@ -109,7 +99,6 @@ def snl_to_wf_eos_thermal_DB(snl, parameters=None):
     print("Calling firetask")
     fws.append(Firework([AddEoSThermalDataToDBTask()], spec, 
                         name=get_slug(f + '--' + spec['task_type']),fw_id=99))
-#    connections[3] = [99]
 
     wf_meta = get_meta_from_structure(snl.structure)
     wf_meta['run_version'] = 'May 2013 (1)'

@@ -174,8 +174,6 @@ class VaspToDBTask(FireTaskBase, FWSerializable):
         update_spec.update({'mpsnl': mpsnl, 'snlgroup_id': snlgroup_id})
 
         print 'ENTERED task id:', t_id
-        print('d[state] = ', d['state'])
-        print('d = ', d)
         stored_data = {'task_id': t_id}
         if d['state'] == 'successful':
             update_spec['analysis'] = d['analysis']
@@ -187,10 +185,10 @@ class VaspToDBTask(FireTaskBase, FWSerializable):
 
         # not successful - first test to see if UnconvergedHandler is needed
         if not fizzled_parent:
-            print('Unsuccessful but not fizzled parent')
             unconverged_tag = 'unconverged_handler--{}'.format(fw_spec['prev_task_type'])
             output_dir = last_relax(os.path.join(prev_dir, 'vasprun.xml'))
             ueh = UnconvergedErrorHandler(output_filename=output_dir)
+            # TODO: make this a little more flexible
             if ueh.check() and unconverged_tag not in fw_spec['run_tags']:
                 print 'Unconverged run! Creating dynamic FW...'
 
@@ -203,14 +201,8 @@ class VaspToDBTask(FireTaskBase, FWSerializable):
                         '_dupefinder': DupeFinderVasp().to_dict(),
                         '_priority': fw_spec['_priority']}
                 # Pass elastic tensor spec
-#                if 'deformed' in fw_spec['task_type']:
-#                    spec['deformation_matrix'] = fw_spec['deformation_matrix']
-#                    spec['original_task_id'] = fw_spec['original_task_id']
                 if 'deformation_matrix' in fw_spec.keys():
                     spec['deformation_matrix'] = fw_spec['deformation_matrix']
-                    spec['original_task_id'] = fw_spec['original_task_id']
-                if 'strainfactor' in fw_spec.keys():
-                    spec['strainfactor'] = fw_spec['strainfactor']
                     spec['original_task_id'] = fw_spec['original_task_id']
                 snl = StructureNL.from_dict(spec['mpsnl'])
                 spec['run_tags'].append(unconverged_tag)
@@ -234,18 +226,16 @@ class VaspToDBTask(FireTaskBase, FWSerializable):
                 if 'deformation_matrix' in fw_spec.keys():
                     spec['deformation_matrix'] = fw_spec['deformation_matrix']
                     spec['original_task_id'] = fw_spec['original_task_id']
-                if 'strainfactor' in fw_spec.keys():
-                    spec['strainfactor'] = fw_spec['strainfactor']
-                    spec['original_task_id'] = fw_spec['original_task_id']
                 spec['run_tags'].append(unconverged_tag)
                 fws.append(
                     Firework([VaspToDBTask()], spec, name=get_slug(f + '--' + spec['task_type']),
                              fw_id=-1))
                 connections[-2] = -1
-                print('Unsuccessful task updated')
+
                 wf = Workflow(fws, connections)
 
                 return FWAction(detours=wf)
 
         # not successful and not due to convergence problem - FIZZLE
-        raise ValueError("DB insertion successful, but don't know how to fix this Firework! Can't continue with workflow...")
+        raise ValueError("DB insertion successful, but don't know how to \
+                         fix this Firework! Can't continue with workflow...")
