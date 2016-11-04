@@ -22,7 +22,7 @@ def snl_to_wf_eos_thermal(snl, parameters=None):
     connections = {}
     parameters = parameters if parameters else {}
     print("Parameters = ", parameters)
-    poisson_val = parameters["poisson_ratio"]
+    poisson_val = parameters.get("poisson_ratio", 0.25)
     print("snl_to_wf_eos_thermal: Poisson ratio = ", poisson_val)
 
     snl_priority = parameters.get('priority', 1)
@@ -85,7 +85,7 @@ def snl_to_wf_eos_thermal_DB(snl, parameters=None):
     connections = {}
     parameters = parameters if parameters else {}
     print("Parameters = ", parameters)
-    poisson_val = parameters["poisson_ratio"]
+    poisson_val = parameters.get("poisson_ratio", 0.25)
     print("snl_to_wf_eos_thermal: Poisson ratio = ", poisson_val)
     original_task_id_val = parameters["original_task_id"]
 
