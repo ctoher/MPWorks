@@ -27,6 +27,7 @@ def go_testing():
     parser = ArgumentParser(description=m_description)
     parser.add_argument('-c', '--clear', help='clear old databases', action='store_true')
     parser.add_argument('-n', '--names', help='csv of compound names', default=None)
+    parser.add_argument('-p', '--project', help='project name to trigger specific worflow', default=None)
     parser.add_argument('--noboltztrap', help='do NOT run boltztrap', action='store_true')
     parser.add_argument('--exact', help='exact structure', action='store_true')
     args = parser.parse_args()
@@ -38,7 +39,7 @@ def go_testing():
         params['boltztrap'] = False
     if args.exact:
         params['exact_structure'] = True
-    clear_and_submit(args.clear, names, params)
+    clear_and_submit(args.clear, names, params, project)
 
 if __name__ == '__main__':
     go_testing()
