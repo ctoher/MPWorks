@@ -13,7 +13,7 @@ from mpworks.snl_utils.mpsnl import get_meta_from_structure, MPStructureNL
 from mpworks.workflows.wf_settings import QA_DB, QA_VASP, QA_CONTROL
 from pymatgen import Composition
 from mpworks.workflows import snl_to_wf
-from mpworks.firetasks.phonon_tasks import update_spec_force_convergence
+from mpworks.firetasks.eos_thermal_tasks import update_spec_force_convergence
 from mpworks.firetasks.eos_thermal_tasks import SetupFConvergenceTask, SetupEoSThermalTask, SetupModifiedVolumeStructTask, AddEoSThermalDataToDBTask
 
 
