@@ -39,7 +39,7 @@ def go_testing():
         params['boltztrap'] = False
     if args.exact:
         params['exact_structure'] = True
-    clear_and_submit(args.clear, names, params, project)
+    clear_and_submit(args.clear, names, params, args.project)
 
 if __name__ == '__main__':
     go_testing()
