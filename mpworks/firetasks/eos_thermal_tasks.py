@@ -223,7 +223,7 @@ class AddEoSThermalDataToDBTask(FireTaskBase, FWSerializable):
 
         if d["error"]:
             raise ValueError("Thermal equation of state analysis failed: {}".format(d["error"]))
-        elif d["analysis"]["filter_pass"]:
+        elif d['analysis'].get('filter_pass') is None or d["analysis"]["filter_pass"]:
             d["state"] = "successful"
         else:
             d["state"] = "filter_failed"
