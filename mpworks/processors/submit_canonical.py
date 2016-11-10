@@ -82,14 +82,19 @@ def submit_tests(names=None, params=None, project=None):
 
     for name, sid in compounds.iteritems():
         if not names or name in names:
-            sid = mpr.get_materials_id_from_task_id("mp-{}".format(sid))
+	    mpid = "mp-{}".format(sid)
+            sid = mpr.get_materials_id_from_task_id(mpid)
             s = mpr.get_structure_by_material_id(sid, final=False)
+	    query_key = 'elasticity.poisson_ratio'
+	    poisson_ratio = mpr.query(mpid, [query_key])[0][query_key]
 
             snl = StructureNL(s, 'Patrick Huck <phuck@lbl.gov>')
 	    if project is not None:
 		snl.projects.append(project)
 
             parameters = {'priority': 10} if name == 'Si' else {}
+	    if poisson_ratio is not None:
+	        parameters['poisson_ratio'] = poisson_ratio
             if params:
                 parameters.update(params)
             sma.submit_snl(snl, 'phuck@lbl.gov', parameters=parameters)
